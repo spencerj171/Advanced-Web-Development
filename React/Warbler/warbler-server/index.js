@@ -1,36 +1,47 @@
-require("dotenv").config()
-var express = require("express");
-var app = express();
-var cors = require('cors');
-var bodyParser = require("body-parser");
-var authRoutes = require("./routes/auth");
-var messagesRoutes = require("./routes/messages");
-var auth = require('./middleware/auth');
-var db = require("./models");
+require("dotenv").config();
+const express = require("express");
+const app = express();
+const cors = require('cors');
+const bodyParser = require("body-parser");
+const errorHandler = require("./handlers/error");
+const authRoutes = require("./routes/auth");
+const messagesRoutes = require("./routes/messages");
+const {loginRequired, ensureCorrectUser} = require("./middleware/auth");
+const db = require("./models");
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended:true}));
 
-app.get("/", function(req,res){
-  res.json({message: "Make a POST requst to /api/auth/signup to signup"});
+app.use("/api/auth", authRoutes);
+app.use("/api/users/:id/messages",
+  loginRequired,
+  ensureCorrectUser,
+  messagesRoutes
+);
+
+app.get("/api/messages", loginRequired, async function(req, res, next) {
+  try {
+    let messages = await db.Message.find()
+      .sort({createdAt: "desc"})
+      .populate("user", {
+        username: true,
+        profileImageUrl: true
+      });
+      return res.status(200).json(messages);
+  } catch(err) {
+    return next(err);
+  }
 });
 
-app.use('/api/users/:id/messages',
-        auth.loginRequired, auth.ensureCorrectUser,
-        messagesRoutes);
-app.use('/api/auth', authRoutes);
-app.get('/api/messages', function(req, res, next) {
-  db.Message.find().sort({createAt: 'desc'})
-    .populate("userId", {username: true, profileImageUrl: true})
-    .then(function(messages) {
-      res.json(messages);
-    }).catch(function(err) {
-      res.status(500).json(err);
-    })
+app.use(function(req, res, next) {
+  let err = new Error("Not Found");
+  err.status = 404;
+  next(err);
 });
 
-const PORT = 8080
+app.use(errorHandler);
+
+const PORT = 8081;
 
 app.listen(PORT, function(){
   console.log(`Server is listening on port ${PORT}`);

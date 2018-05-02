@@ -1,9 +1,19 @@
-var express = require("express");
-var router = express.Router({mergeParams: true});
-var db = require("../models");
-var helpers = require('../helpers/messages');
+const express = require("express");
+const router = express.Router({ mergeParams: true });
 
-router.post('/', helpers.createMessage);
+const {
+  createMessage,
+  getMessage,
+  deleteMessage
+} = require("../handlers/messages");
 
+// prefix - /api/users/:id/messages
+router.route("/").post(createMessage);
+
+// prefix - /api/users/:id/messages/:message_id
+router
+  .route("/:message_id")
+  .get(getMessage)
+  .delete(deleteMessage);
 
 module.exports = router;

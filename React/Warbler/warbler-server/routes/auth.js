@@ -1,10 +1,8 @@
-var express = require("express");
-var router = express.Router();
-var db = require("../models");
-var jwt = require('jsonwebtoken');
-var helpers = require('../helpers/auth');
+const express = require("express");
+const router = express.Router();
+const { signup, signin } = require("../handlers/auth");
 
-router.post('/signin', helpers.signin);
-router.post('/signup', helpers.signup);
+router.post("/signup", signup);
+router.post("/signin", signin);
 
 module.exports = router;
